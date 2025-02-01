@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NGL to Discord</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #7289DA, #5865F2);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 500px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+        }
+
+        .header {
+            background: #5865F2;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            border-radius: 10px 10px 0 0;
+        }
+
+        .header h1 {
+            font-size: 1.5rem;
+            margin-bottom: 5px;
+        }
+
+        .message-form {
+            margin-top: 20px;
+        }
+
+        .message-input {
+            width: 100%;
+            height: 120px;
+            padding: 15px;
+            border: 2px solid #eee;
+            border-radius: 10px;
+            resize: none;
+            font-size: 1rem;
+            margin-bottom: 10px;
+        }
+
+        .message-input:focus {
+            outline: none;
+            border-color: #5865F2;
+        }
+
+        .name-input {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #eee;
+            border-radius: 8px;
+            font-size: 1rem;
+            margin-bottom: 10px;
+        }
+
+        .name-input:focus {
+            outline: none;
+            border-color: #5865F2;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .toggle-btn {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .toggle-btn.active {
+            background: #5865F2;
+            color: white;
+        }
+
+        .toggle-btn.inactive {
+            background: #ddd;
+            color: black;
+        }
+
+        .info-text {
+            font-size: 0.9rem;
+            text-align: center;
+            color: #555;
+            margin-bottom: 10px;
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 12px;
+            background: #5865F2;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .submit-btn:hover {
+            background: #4752C4;
+        }
+
+        .status {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 5px;
+            text-align: center;
+            display: none;
+        }
+
+        .status.success {
+            background: #43B581;
+            color: white;
+            display: block;
+        }
+
+        .status.error {
+            background: #F04747;
+            color: white;
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Kirim Pesan ke Discord</h1>
+            <p>Pesan anonim atau dengan nama!</p>
+        </div>
+
+        <div class="message-form">
+            <input 
+                type="text" 
+                class="name-input" 
+                placeholder="Masukkan nama (Opsional)"
+            >
+            <div class="button-group">
+                <button class="toggle-btn active" id="use-name">Gunakan Nama</button>
+                <button class="toggle-btn inactive" id="use-anon">Anonim</button>
+            </div>
+            <p class="info-text">Nama mu akan dikirim ke Discord bersama pesan.</p>
+            <textarea 
+                class="message-input" 
+                placeholder="Tulis pesanmu di sini..."
+                maxlength="2000"
+            ></textarea>
+            <button class="submit-btn">Kirim Pesan</button>
+            <div class="status"></div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const messageInput = document.querySelector('.message-input');
+            const nameInput = document.querySelector('.name-input');
+            const submitButton = document.querySelector('.submit-btn');
+            const statusDiv = document.querySelector('.status');
+            const infoText = document.querySelector('.info-text');
+
+            const nameButton = document.getElementById('use-name');
+            const anonButton = document.getElementById('use-anon');
+
+            let useAnon = false;
+            const webhookUrl = "https://discord.com/api/webhooks/1335133204041957446/Kt_yC5B0NixWpOe0nk414FZzI-lo5sfGQL3IETMgn7hy4IId_IXOXywK6jJSnRrOvBjf"; // Ganti dengan webhook lu
+
+            nameButton.addEventListener('click', () => {
+                useAnon = false;
+                nameButton.classList.add('active');
+                anonButton.classList.remove('active');
+                infoText.textContent = "Nama mu akan dikirim ke Discord bersama pesan.";
+            });
+
+            anonButton.addEventListener('click', () => {
+                useAnon = true;
+                nameButton.classList.remove('active');
+                anonButton.classList.add('active');
+                infoText.textContent = "Pesan anda akan dikirim sebagai anonim.";
+            });
+
+            submitButton.addEventListener('click', async function() {
+                const messageText = messageInput.value.trim();
+                const userName = nameInput.value.trim() || "Pesan Anonim";
+
+                if (!messageText) {
+                    showStatus('Pesan tidak boleh kosong!', 'error');
+                    return;
+                }
+
+                submitButton.disabled = true;
+                submitButton.textContent = 'Mengirim...';
+
+                try {
+                    const response = await fetch(webhookUrl, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            content: messageText,
+                            username: useAnon ? "Pesan Anonim" : userName,
+                            avatar_url: useAnon 
+                                ? "https://cdn.discordapp.com/attachments/123456789/123456789/anonymous.png" 
+                                : "https://cdn.discordapp.com/attachments/123456789/123456789/user.png"
+                        })
+                    });
+
+                    if (response.ok) {
+                        showStatus('Pesan berhasil dikirim!', 'success');
+                        messageInput.value = '';
+                    } else {
+                        throw new Error('Gagal mengirim pesan');
+                    }
+                } catch (error) {
+                    showStatus('Gagal mengirim pesan. Pastikan Webhook URL valid!', 'error');
+                }
+
+                submitButton.disabled = false;
+                submitButton.textContent = 'Kirim Pesan';
+            });
+
+            function showStatus(message, type) {
+                statusDiv.textContent = message;
+                statusDiv.className = 'status ' + type;
+                setTimeout(() => {
+                    statusDiv.className = 'status';
+                }, 3000);
+            }
+        });
+    </script>
+</body>
+</html>
